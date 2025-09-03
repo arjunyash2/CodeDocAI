@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeDoc AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans flex flex-col h-screen">
+
+    <header class="bg-gray-800 border-b border-gray-700 p-4">
+        <h1 class="text-2xl font-bold text-center text-white">CodeDoc AI</h1>
+        <p class="text-center text-gray-400">Your personal codebase assistant</p>
+    </header>
+
+    <main id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-4">
+        <div class="chat-bubble bot-bubble">
+            <div class="prose prose-invert max-w-none">
+                <p>Hello! Please provide a public GitHub repository URL to get started.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 border-t border-gray-700 p-4">
+        <!-- Form for submitting the repository URL -->
+        <form id="repo-form" class="flex items-center max-w-3xl mx-auto">
+            <input
+                type="text"
+                id="repo-url-input"
+                placeholder="https://github.com/user/repo"
+                class="flex-1 bg-gray-700 border border-gray-600 rounded-l-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+                autocomplete="off">
+            <button
+                type="submit"
+                id="repo-submit-button"
+                class="bg-green-600 hover:bg-green-700 text-white font-semibold p-3 rounded-r-md transition-colors flex items-center justify-center">
+                Index Repo
+            </button>
+        </form>
+
+        <!-- Form for asking questions (initially hidden) -->
+        <form id="query-form" class="flex items-center max-w-3xl mx-auto hidden">
+            <input
+                type="text"
+                id="query-input"
+                placeholder="e.g., Explain the main function in app/main.py"
+                class="flex-1 bg-gray-700 border border-gray-600 rounded-l-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+                autocomplete="off">
+            <button
+                type="submit"
+                id="query-submit-button"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded-r-md transition-colors flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+        </form>
+    </footer>
+
+<script>
+    const repoForm = document.getElementById('repo-form');
+    const queryForm = document.getElementById('query-form');
+    const repoUrlInput = document.getElementById('repo-url-input');
+    const queryInput = document.getElementById('query-input');
+    const chatContainer = document.getElementById('chat-container');
+    const repoSubmitButton = document.getElementById('repo-submit-button');
+    const querySubmitButton = document.getElementById('query-submit-button');
+
+    function addMessage(content, type) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-bubble ${type}-bubble`;
+
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'prose prose-invert max-w-none';
+        contentWrapper.innerHTML = marked.parse(content);
+
+        messageDiv.appendChild(contentWrapper);
+        chatContainer.appendChild(messageDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        return messageDiv;
+    }
+
+    // --- Event Listener for Repository Form ---
+    repoForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const repoUrl = repoUrlInput.value.trim();
+        if (!repoUrl) return;
+
+        addMessage(`Indexing repository: \`${repoUrl}\``, 'user');
+
+        repoUrlInput.value = '';
+        repoSubmitButton.disabled = true;
+        repoSubmitButton.innerHTML = `<div class="loader"></div>`;
+
+        const botMessageDiv = addMessage('<div class="typing-indicator"><span></span><span></span><span></span></div>', 'bot');
+
+        try {
+            const response = await fetch('/setup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ repo_url: repoUrl }),
+            });
+            const data = await response.json();
+
+            const botContentWrapper = botMessageDiv.querySelector('.prose');
+            botContentWrapper.innerHTML = marked.parse(data.message);
+
+            if (data.success) {
+                repoForm.classList.add('hidden');
+                queryForm.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error during setup:', error);
+            const botContentWrapper = botMessageDiv.querySelector('.prose');
+            botContentWrapper.innerHTML = marked.parse('Sorry, something went wrong during setup. Please check the console and server logs.');
+        } finally {
+            repoSubmitButton.disabled = false;
+            repoSubmitButton.innerText = 'Index Repo';
+        }
+    });
+
+    // --- Event Listener for Query Form ---
+    queryForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const query = queryInput.value.trim();
+        if (!query) return;
+
+        addMessage(query, 'user');
+
+        queryInput.value = '';
+        querySubmitButton.disabled = true;
+        querySubmitButton.innerHTML = `<div class="loader"></div>`;
+
+        const botMessageDiv = addMessage('<div class="typing-indicator"><span></span><span></span><span></span></div>', 'bot');
+
+        try {
+            const response = await fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query }),
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const data = await response.json();
+            const botContentWrapper = botMessageDiv.querySelector('.prose');
+            botContentWrapper.innerHTML = marked.parse(data.response);
+
+        } catch (error) {
+            console.error('Error fetching response:', error);
+            const botContentWrapper = botMessageDiv.querySelector('.prose');
+            botContentWrapper.innerHTML = marked.parse('Sorry, something went wrong. Please check the console for details.');
+        } finally {
+            querySubmitButton.disabled = false;
+            querySubmitButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
+        }
+    });
+</script>
+</body>
+</html>
+

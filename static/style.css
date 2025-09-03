@@ -1,0 +1,96 @@
+/* Use a modern font for the whole interface */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Base styling for chat bubbles */
+.chat-bubble {
+    max-width: 80%;
+    padding: 1rem 1.5rem;
+    border-radius: 1.25rem;
+    word-wrap: break-word;
+}
+
+/* User's message bubble */
+.user-bubble {
+    background-color: #3b82f6; /* Blue 500 */
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 0.25rem;
+}
+
+/* Bot's message bubble */
+.bot-bubble {
+    background-color: #374151; /* Gray 700 */
+    color: #d1d5db; /* Gray 300 */
+    margin-right: auto;
+    border-bottom-left-radius: 0.25rem;
+}
+
+/* --- KEY STYLES for Code Blocks --- */
+/* This targets the <pre> element that Marked.js creates */
+.prose pre {
+    background-color: #111827; /* Gray 900 - a darker shade */
+    color: #e5e7eb; /* Gray 200 */
+    border: 1px solid #4b5563; /* Gray 600 */
+    border-radius: 0.5rem;
+    padding: 1rem;
+    overflow-x: auto; /* Allow horizontal scrolling for long lines */
+    font-size: 0.9em;
+}
+
+/* This targets the <code> element inside the <pre> */
+.prose pre code {
+    background-color: transparent;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* Style for inline code snippets `like this` */
+.prose :not(pre) > code {
+    background-color: #4b5563; /* Gray 600 */
+    color: #e5e7eb; /* Gray 200 */
+    padding: 0.2em 0.4em;
+    border-radius: 0.25rem;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+/* --- Loading Spinner and Typing Indicator --- */
+.loader {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+}
+.typing-indicator span {
+    height: 8px;
+    width: 8px;
+    background-color: #9ca3af;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0 2px;
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+.typing-indicator span:nth-of-type(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-of-type(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1.0); }
+}

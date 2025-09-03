@@ -1,0 +1,9 @@
+flask
+langchain
+faiss-cpu
+transformers
+sentence-transformers
+gitpython
+torch
+langchain-community
+langchain-huggingface
